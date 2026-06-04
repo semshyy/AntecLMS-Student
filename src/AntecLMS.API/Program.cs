@@ -1,53 +1,70 @@
+using AntecLMS.API.Middleware;
+using AntecLMS.Application;
+using AntecLMS.Infrastructure;
+using AntecLMS.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddSwaggerGen(c =>
+{
+  c.SwaggerDoc("v1", new OpenApiInfo { Title = "AntecLMS API", Version = "v1" });
+  c.AddSecurityDefinition(
+    "Bearer",
+    new OpenApiSecurityScheme
+    {
+      Name = "Authorization",
+      Type = SecuritySchemeType.Http,
+      Scheme = "Bearer",
+      BearerFormat = "JWT",
+      In = ParameterLocation.Header,
+      Description = "JWT token daxil edin: Bearer {token}",
+    }
+  );
+  c.AddSecurityRequirement(
+    new OpenApiSecurityRequirement
+    {
+      {
+        new OpenApiSecurityScheme
+        {
+          Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" },
+        },
+        Array.Empty<string>()
+      },
+    }
+  );
+});
+
+builder.Services.AddCors(options =>
+{
+  options.AddDefaultPolicy(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+using (var scope = app.Services.CreateScope())
+{
+  var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+  await db.Database.MigrateAsync();
+}
+
+app.UseMiddleware<ExceptionMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
-  app.MapOpenApi();
+  app.UseSwagger();
+  app.UseSwaggerUI();
 }
 
-// app.UseHttpsRedirection();
+app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
 
-var summaries = new[]
-{
-  "Freezing",
-  "Bracing",
-  "Chilly",
-  "Cool",
-  "Mild",
-  "Warm",
-  "Balmy",
-  "Hot",
-  "Sweltering",
-  "Scorching",
-};
-
-app.MapGet(
-    "/weatherforecast",
-    () =>
-    {
-      var forecast = Enumerable
-        .Range(1, 5)
-        .Select(index => new WeatherForecast(
-          DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-          Random.Shared.Next(-20, 55),
-          summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-      return forecast;
-    }
-  )
-  .WithName("GetWeatherForecast");
-
-app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-  public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+await app.RunAsync();
