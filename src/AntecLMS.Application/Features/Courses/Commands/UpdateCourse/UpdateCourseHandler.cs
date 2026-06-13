@@ -3,6 +3,9 @@ using AntecLMS.Application.Common.Models;
 using AntecLMS.Domain.Enums;
 using AntecLMS.Domain.Repositories;
 using MediatR;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AntecLMS.Application.Features.Courses.Commands.UpdateCourse;
 
@@ -28,7 +31,10 @@ public class UpdateCourseHandler
       ?? throw new NotFoundException("Course", request.Id);
 
     var status = Enum.Parse<CourseStatus>(request.Status, true);
-    course.Update(request.Name, request.Description, status);
+
+    // DÜZƏLİŞ: Yeni əlavə etdiyimiz StartDate və EndDate parametrləri metodu qırmasın deyə,
+    // kursun öz daxilində olan mövcud tarixlərini bura ötürürük.
+    course.Update(request.Name, request.Description, status, course.StartDate, course.EndDate);
 
     _courses.Update(course);
     await _uow.SaveChangesAsync(ct);
