@@ -4,6 +4,9 @@ using AntecLMS.Domain.Entities;
 using AntecLMS.Domain.Enums;
 using AntecLMS.Domain.Repositories;
 using MediatR;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AntecLMS.Application.Features.Students.Commands.CreateStudent;
 
@@ -47,23 +50,29 @@ public class CreateStudentHandler : IRequestHandler<CreateStudentCommand, Result
       status
     );
 
-    await _users.AddAsync(user, ct);
-    await _uow.SaveChangesAsync(ct);
+   
 
-    var student = Student.Create(user.Id, request.BirthDate, request.Note, status);
+    var student = Student.Create(
+        user.Id,
+        request.Phone,
+        request.BirthDate,
+        request.Note,
+        status
+    );
+
     await _students.AddAsync(student, ct);
     await _uow.SaveChangesAsync(ct);
 
     return Result<StudentResponse>.Success(
-      new StudentResponse(
-        student.Id,
-        user.Id,
-        user.Name,
-        user.Surname,
-        user.Email,
-        student.Status.ToString().ToLower()
-      ),
-      201
+        new StudentResponse(
+            student.Id,
+            user.Id,
+            user.Name,
+            user.Surname,
+            user.Email,
+            student.Status.ToString().ToLower()
+        ),
+        201
     );
   }
 }

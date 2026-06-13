@@ -5,9 +5,14 @@ namespace AntecLMS.Domain.Entities;
 
 public class Group : BaseEntity
 {
+  public string GroupCode { get; private set; } = default!;
   public string Name { get; private set; } = default!;
+
   public int CourseId { get; private set; }
-  public int TeacherId { get; private set; }
+
+  // DÜZƏLİŞ: Teacher-ın UserId-si string olduğu üçün bu mütləq string olmalıdır!
+  public int TeacherId { get; private set; } = default!;
+
   public DateOnly StartDate { get; private set; }
   public DateOnly? EndDate { get; private set; }
   public GroupStatus Status { get; private set; }
@@ -19,7 +24,9 @@ public class Group : BaseEntity
 
   protected Group() { }
 
+  // DÜZƏLİŞ: teacherId parametri string qəbul edir
   public static Group Create(
+    string groupCode,
     string name,
     int courseId,
     int teacherId,
@@ -29,6 +36,7 @@ public class Group : BaseEntity
   ) =>
     new()
     {
+      GroupCode = groupCode,
       Name = name,
       CourseId = courseId,
       TeacherId = teacherId,
@@ -37,8 +45,10 @@ public class Group : BaseEntity
       Status = status,
     };
 
-  public void Update(string name, int teacherId, GroupStatus status)
+  // DÜZƏLİŞ: Update metodunda da teacherId string olaraq yeniləndi
+  public void Update(string groupCode, string name, int teacherId, GroupStatus status)
   {
+    GroupCode = groupCode;
     Name = name;
     TeacherId = teacherId;
     Status = status;

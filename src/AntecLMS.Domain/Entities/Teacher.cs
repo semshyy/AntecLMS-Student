@@ -5,17 +5,19 @@ namespace AntecLMS.Domain.Entities;
 
 public class Teacher : BaseEntity
 {
-  public int UserId { get; private set; }
+  // Sizin istəyinizə uyğun olaraq UserId int tipindən string tipinə dəyişdirildi
+  public int UserId { get; private set; } = default!;
   public string? Specialization { get; private set; }
   public string? Bio { get; private set; }
   public UserStatus Status { get; private set; }
 
-  // Nav
+  // Nav (Navigation Properties)
   public User User { get; set; } = default!;
   public ICollection<Group> Groups { get; set; } = new List<Group>();
 
   protected Teacher() { }
 
+  // Create metodu string userId qəbul edəcək şəkildə yeniləndi
   public static Teacher Create(
     int userId,
     string? specialization,

@@ -1,77 +1,66 @@
-using AntecLMS.Application.Features.Students.Commands.CreateStudent;
-using AntecLMS.Application.Features.Students.Commands.DeleteStudent;
-using AntecLMS.Application.Features.Students.Commands.UpdateStudent;
-using AntecLMS.Application.Features.Students.Queries.GetStudentById;
-using AntecLMS.Application.Features.Students.Queries.GetStudents;
+using AntecLMS.Application.Features.Students.Commands.ChangePassword;
+using AntecLMS.Application.Features.Students.Queries.GetMyAttendance;
+using AntecLMS.Application.Features.Students.Queries.GetMyDashboard;
+using AntecLMS.Application.Features.Students.Queries.GetMyGrades;
+using AntecLMS.Application.Features.Students.Queries.GetMyLessons;
+using AntecLMS.Application.Features.Students.Queries.GetMyMaterials;
+using AntecLMS.Application.Features.Students.Queries.GetMyProfile;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AntecLMS.API.Controllers;
 
-[Authorize(Roles = "Admin")]
-public class StudentsController : BaseApiController
+[Authorize(Roles = "Student")]
+[Route("api/me")]
+public class StudentPortalController : BaseApiController
 {
-  [HttpGet]
-  public async Task<IActionResult> GetAll(
-    [FromQuery] int? groupId,
-    [FromQuery] string? status,
-    [FromQuery] string? search,
-    [FromQuery] int page = 1,
-    [FromQuery] int perPage = 20,
-    CancellationToken ct = default
-  )
+  [HttpGet("dashboard")]
+  public async Task<IActionResult> GetMyDashboard(CancellationToken ct)
   {
-    var result = await Mediator.Send(
-      new GetStudentsQuery(groupId, status, search, page, perPage),
-      ct
-    );
+    var result = await Mediator.Send(new GetMyDashboardQuery(), ct);
     return ToResponse(result);
   }
 
-  [HttpGet("{id:int}")]
-  [Authorize(Roles = "Admin,Teacher")]
-  public async Task<IActionResult> GetById(int id, CancellationToken ct)
+  [HttpGet("lessons")]
+  public async Task<IActionResult> GetMyLessons(CancellationToken ct)
   {
-    var result = await Mediator.Send(new GetStudentByIdQuery(id), ct);
+    var result = await Mediator.Send(new GetMyLessonsQuery(), ct);
     return ToResponse(result);
   }
 
-  [HttpPost]
-  public async Task<IActionResult> Create(
-    [FromBody] CreateStudentCommand command,
-    CancellationToken ct
-  )
+  [HttpGet("attendance")]
+  public async Task<IActionResult> GetMyAttendance(CancellationToken ct)
+  {
+    var result = await Mediator.Send(new GetMyAttendanceQuery(), ct);
+    return ToResponse(result);
+  }
+
+  [HttpGet("grades")]
+  public async Task<IActionResult> GetMyGrades(CancellationToken ct)
+  {
+    var result = await Mediator.Send(new GetMyGradesQuery(), ct);
+    return ToResponse(result);
+  }
+
+  [HttpGet("materials")]
+  public async Task<IActionResult> GetMyMaterials(CancellationToken ct)
+  {
+    var result = await Mediator.Send(new GetMyMaterialsQuery(), ct);
+    return ToResponse(result);
+  }
+
+  [HttpPut("change-password")]
+  public async Task<IActionResult> ChangePassword(
+      [FromBody] ChangePasswordCommand command,
+      CancellationToken ct)
   {
     var result = await Mediator.Send(command, ct);
-    if (!result.IsSuccess)
-      return ToResponse(result);
-    return StatusCode(201, new { message = "Tələbə uğurla yaradıldı.", data = result.Data });
+    return ToResponse(result);
   }
-
-  [HttpPut("{id:int}")]
-  public async Task<IActionResult> Update(
-    int id,
-    [FromBody] UpdateStudentRequest request,
-    CancellationToken ct
-  )
+  [HttpGet("profile")]
+  public async Task<IActionResult> GetMyProfile(CancellationToken ct)
   {
-    var result = await Mediator.Send(
-      new UpdateStudentCommand(id, request.Phone, request.Note, request.Status),
-      ct
-    );
-    if (!result.IsSuccess)
-      return ToResponse(result);
-    return Ok(new { message = "Tələbə məlumatları uğurla yeniləndi.", data = result.Data });
-  }
-
-  [HttpDelete("{id:int}")]
-  public async Task<IActionResult> Delete(int id, CancellationToken ct)
-  {
-    var result = await Mediator.Send(new DeleteStudentCommand(id), ct);
-    if (!result.IsSuccess)
-      return ToResponse(result);
-    return Ok(new { message = "Tələbə uğurla silindi." });
+    var result = await Mediator.Send(new GetMyProfileQuery(), ct);
+    return ToResponse(result);
   }
 }
-
-public record UpdateStudentRequest(string? Phone, string? Note, string Status);

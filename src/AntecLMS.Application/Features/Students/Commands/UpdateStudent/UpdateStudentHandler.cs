@@ -1,13 +1,16 @@
 using AntecLMS.Application.Common.Exceptions;
 using AntecLMS.Application.Common.Models;
+using AntecLMS.Domain.Entities;
 using AntecLMS.Domain.Enums;
 using AntecLMS.Domain.Repositories;
 using MediatR;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AntecLMS.Application.Features.Students.Commands.UpdateStudent;
 
-public class UpdateStudentHandler
-  : IRequestHandler<UpdateStudentCommand, Result<UpdatedStudentResponse>>
+public class UpdateStudentHandler : IRequestHandler<UpdateStudentCommand, Result<UpdatedStudentResponse>>
 {
   private readonly IStudentRepository _students;
   private readonly IUnitOfWork _uow;
@@ -18,31 +21,30 @@ public class UpdateStudentHandler
     _uow = uow;
   }
 
-  public async Task<Result<UpdatedStudentResponse>> Handle(
-    UpdateStudentCommand request,
-    CancellationToken ct
-  )
+  public async Task<Result<UpdatedStudentResponse>> Handle(UpdateStudentCommand request, CancellationToken ct)
   {
-    var student =
-      await _students.GetWithUserAsync(request.Id, ct)
-      ?? throw new NotFoundException("Student", request.Id);
+    Student student = await _students.GetWithUserAsync(request.Id, ct)
+                      ?? throw new NotFoundException("Student", request.Id);
 
     var status = Enum.Parse<UserStatus>(request.Status, true);
-    student.Update(request.Note, status);
+
+    student.Update(request.Phone, request.Note, status, request.BirthDate);
 
     if (request.Phone is not null)
+    {
       student.User.Update(student.User.Name, student.User.Surname, request.Phone, status);
+    }
 
     _students.Update(student);
     await _uow.SaveChangesAsync(ct);
 
     return Result<UpdatedStudentResponse>.Success(
-      new UpdatedStudentResponse(
-        student.Id,
-        student.User.Phone,
-        student.Note,
-        student.Status.ToString().ToLower()
-      )
+        new UpdatedStudentResponse(
+            student.Id,
+            student.User.Phone,
+            student.Note,
+            student.Status.ToString().ToLower()
+        )
     );
   }
 }

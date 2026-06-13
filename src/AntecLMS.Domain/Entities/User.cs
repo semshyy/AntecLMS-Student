@@ -5,6 +5,8 @@ namespace AntecLMS.Domain.Entities;
 
 public class User : BaseEntity
 {
+  // Sizin köhnə Identity projenizlə tam uzlaşması üçün xüsusi string ID.
+  // BaseEntity-dən gələn ID-ni string olaraq istifadə edəcəyik (və ya Id-ni kölgədə qoyacaq).
   public string Name { get; private set; } = default!;
   public string Surname { get; private set; } = default!;
   public string Email { get; private set; } = default!;
@@ -13,9 +15,10 @@ public class User : BaseEntity
   public UserRole Role { get; private set; }
   public UserStatus Status { get; private set; }
 
-  // Nav
-  public Teacher? TeacherProfile { get; set; }
-  public Student? StudentProfile { get; set; }
+  // Nav (Navigation Properties)
+  // Köhnə koddakı adlarla (Teacher/Student) AntecLMS-dəki profilləri sinxronlaşdırdıq
+  public virtual Teacher? TeacherProfile { get; set; }
+  public virtual Student? StudentProfile { get; set; }
 
   protected User() { }
 
@@ -53,6 +56,11 @@ public class User : BaseEntity
   public void ChangeStatus(UserStatus status)
   {
     Status = status;
+    MarkUpdated();
+  }
+  public void ChangePassword(string hashedPassword)
+  {
+    Password = hashedPassword;
     MarkUpdated();
   }
 }

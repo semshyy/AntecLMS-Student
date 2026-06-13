@@ -15,7 +15,11 @@ public class StudentRepository : BaseRepository<Student>, IStudentRepository
       .Include(s => s.GroupStudents)
         .ThenInclude(gs => gs.Group)
       .FirstOrDefaultAsync(s => s.Id == id, ct);
-
+  public async Task<Student?> GetByUserIdAsync(int userId, CancellationToken ct = default) =>
+    await _set.Include(s => s.User)
+        .Include(s => s.GroupStudents)
+            .ThenInclude(gs => gs.Group)
+        .FirstOrDefaultAsync(s => s.UserId == userId, ct);
   public async Task<(List<Student> Items, int Total)> GetPagedAsync(
     int? groupId,
     UserStatus? status,

@@ -3,6 +3,9 @@ using AntecLMS.Domain.Entities;
 using AntecLMS.Domain.Enums;
 using AntecLMS.Domain.Repositories;
 using MediatR;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AntecLMS.Application.Features.Groups.Commands.CreateGroup;
 
@@ -10,19 +13,12 @@ public class CreateGroupHandler : IRequestHandler<CreateGroupCommand, Result<Gro
 {
   private readonly IGroupRepository _groups;
   private readonly ICourseRepository _courses;
-  private readonly ITeacherRepository _teachers;
   private readonly IUnitOfWork _uow;
 
-  public CreateGroupHandler(
-    IGroupRepository groups,
-    ICourseRepository courses,
-    ITeacherRepository teachers,
-    IUnitOfWork uow
-  )
+  public CreateGroupHandler(IGroupRepository groups, ICourseRepository courses, IUnitOfWork uow)
   {
     _groups = groups;
     _courses = courses;
-    _teachers = teachers;
     _uow = uow;
   }
 
@@ -32,33 +28,32 @@ public class CreateGroupHandler : IRequestHandler<CreateGroupCommand, Result<Gro
     if (course is null)
       return Result<GroupResponse>.Failure("Kurs tapılmadı.", 404);
 
-    var teacher = await _teachers.GetByIdAsync(request.TeacherId, ct);
-    if (teacher is null)
-      return Result<GroupResponse>.Failure("Müəllim tapılmadı.", 404);
-
     var status = Enum.Parse<GroupStatus>(request.Status, true);
+    string generatedGroupCode = $"GRP-{new Random().Next(100, 999)}";
+
     var group = Group.Create(
-      request.Name,
-      request.CourseId,
-      request.TeacherId,
-      request.StartDate,
-      request.EndDate,
-      status
+        generatedGroupCode,
+        request.Name,
+        request.CourseId,
+        request.TeacherId,  // ← birbaşa int, .ToString() yox
+        request.StartDate,
+        request.EndDate,
+        status
     );
 
     await _groups.AddAsync(group, ct);
     await _uow.SaveChangesAsync(ct);
 
     return Result<GroupResponse>.Success(
-      new GroupResponse(
-        group.Id,
-        group.Name,
-        group.CourseId,
-        group.TeacherId,
-        group.StartDate,
-        group.Status.ToString().ToLower()
-      ),
-      201
+        new GroupResponse(
+            group.Id,
+            group.Name,
+            group.CourseId,
+            group.TeacherId,  // ← 0 yox, real dəyər
+            group.StartDate,
+            group.Status.ToString().ToLower()
+        ),
+        201
     );
   }
 }
